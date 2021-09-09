@@ -1,7 +1,25 @@
-*Título: Ejemplo Introductorio
-*autor: Alejandro Navarro
-*fecha:07/09/2021
+Título: Ejemplo Introductorio
+autor: Alejandro Navarro
+fecha:07/09/2021
 
+*************************************************************
+          * Ideas básicas de stata
+*************************************************************
+1. Es un lenguaje de programación
+2. Tiene una sintaxis y una gramática que siguen unas reglas que no necesitamos conocer
+3. Análisis estadístico descriptivo de bases de datos
+4. Modelaciones
+
+************************************************************
+          *Datos
+************************************************************
+1. Pueden entenderse como una colección de valores que pueden ser números caracteres o símbolos.
+2. Los datos en sí mismo no son información. Son información si se obtiene de ellos una respuesta a una pregunta.
+3. Las personas usan la información para transformarla en conocimiento a partir de la interpretación y la experiencia.
+
+*********************************************************************************
+                  *¿Cómo crear datos en stata?
+*********************************************************************
 clear /*limpiar la memoria*/
 set more off /*Comenzar programación*/
 cd C:\ /*Directorio de trabajo*/
