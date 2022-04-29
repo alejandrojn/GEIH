@@ -1,0 +1,356 @@
+---
+title: "GEIH 2022"
+author: "Alejandro Navarro"
+date: "11/4/2022"
+output: 
+ html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
+    highlight: tango
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup_prog, include = FALSE, cache = FALSE}
+knitr::opts_chunk$set(
+  comment = NA, 
+  warning = FALSE, 
+  message = FALSE
+    )
+here::i_am("GEIH/GEIH 2022.Rmd")
+library(here)
+here()
+
+```
+
+# GEIH {-}
+
+En el presente documento trabajaremos con los microdatos de la **GEIH** con el ánimo de replicar los resultados de los indicadores del mercado laboral más relevantes y que hacen parte de los informes que presenta trimestralmente el **DANE**. 
+
+Para calcular los indicadores utilizaremos los datos contenidos en los módulos de **Ocupados**, **Desocupados**, **Inactivos** y de **Características Generales** del conglomerado definido por el departamento como Áreas Metropolitanas.
+
+Los datos serán calculados en el orden nacional y en el Área metropolitana de la ciudad Barranquilla.
+
+# Instalar e invocar paquetes {-}
+
+Antes de comenzar a programar en Rstudio es necesario instalar los paquetes con el comando `Install.packages` y luego invocarlos con el comando `library()`.
+
+```{r}
+#install.packages("haven")
+library(haven)
+library(readr)
+library(tidyverse)
+library(survey)
+library(lubridate)
+library(ggplot2)
+library(flextable)
+```
+
+
+# Características Generales
+Para poder trabajar con los datos debes ubicar la carpeta donde se encuentra el archivo y su extensión. Si no sabes como ubicarlo puedes utilizar el comando `file.choose`para buscar la carpeta del archivo en el disco duro.
+
+Iniciaremos con los datos de las **Características Generales**.
+
+```{r}
+file.choose()
+```
+
+Debido a que la extensión es **.dta** debes utilizar el comando adecuado para leer los datos que presentan esa extensión. Para eso puedes utilizar el comando `read_dta` y la sintaxis con la orden de programación como de todas las demás debe seguir el siguiente lógica:
+
+1. Escoges un nombre para la tabla, en este caso yo escogí las iniciales **ACGD** para diciembre, **ACGN** para noviembre y **ACGO** para octubre.
+2. Luego digitas el operador de asignación `<-` que se utiliza para crear objetos en la ventana del **Global Environment**.
+3. El comando o la orden que quieres que realice el programa `read_delim`.
+4. La ubicación del archivo en el disco duro **"C:\\"**.
+
+```{r setup, include=FALSE}
+ACGD <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Diciembre.dta\\ÁreaCaracterísticasgenerales.dta")
+ACGD
+##Noviembre##
+ACGN <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Noviembre.dta\\ÁreaCaracterísticasgenerales.dta")
+##Octubre##
+ACGO <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Octubre.dta\\ÁreaCaracterísticasgenerales.dta")
+```
+
+Luego de tener los tres **Dataframe** en el ambiente global, podemos pasar a fusionar los datos y a crear la variable de identificación **LLAVE**
+
+```{r}
+
+ACGF<- bind_rows(ACGD, ACGN, ACGO)
+ACGF2 <-unite(ACGF, LLAVE, c(1:3),  sep = ".", remove = TRUE)
+ACGF2
+```
+
+# Ocupados
+
+Continuamos cargando los datos del módulo de **Ocupado**:
+
+```{r}
+AOD <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Diciembre.dta\\ÁreaOcupados.dta")
+AON <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Noviembre.dta\\ÁreaOcupados.dta")
+AOO <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Octubre.dta\\ÁreaOcupados.dta")
+```
+
+Fusionamos los tres meses de ocupados y creamos la varaible de identidad **LLAVE** como lo hicimos anteriormente con los datos de **CG**.
+
+```{r}
+AOF = bind_rows(AOD, AON, AOO)
+AOF2 <-unite(AOF, LLAVE, c(1:3),  sep = ".", remove = TRUE)
+
+```
+
+# Desocupados
+
+```{r}
+ADD <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Diciembre.dta\\ÁreaDesocupados.dta")
+#Noviembre
+ADN <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Noviembre.dta\\ÁreaDesocupados.dta")
+#Octubre
+ADO <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Octubre.dta\\ÁreaDesocupados.dta")
+
+```
+
+```{r}
+ADF = bind_rows(ADD, ADN, ADO)
+ADF2 <-unite(ADF, LLAVE, c(1:3),  sep = ".", remove = TRUE)
+```
+
+# Inactivos
+
+```{r}
+AID <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Diciembre.dta\\ÁreaInactivos.dta")
+#Noviembre
+AIN <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Noviembre.dta\\ÁreaInactivos.dta")
+#Octubre
+AIO <- read_dta("C:\\Users\\USER\\OneDrive\\Desktop\\DiplomadoStata\\202201\\ejemplo\\Octubre.dta\\ÁreaInactivos.dta")
+```
+
+```{r}
+AIF = bind_rows(AID, AIN, AIO)
+AIF2 <-unite(AIF, LLAVE, c(1:3),  sep = ".", remove = TRUE)
+```
+
+# Fusión vertical de datos:
+
+Teniendo en cuenta que la identidad de los datos en los tres **Dataframe**, **AIF2**, **ADF2** y **AOF2** son complementarios podemos fusionarlas verticalmente sin que se dupliquen los datos.
+
+Para hacer la fusión utilizamos nuevamente el comando `bind_rows`
+
+```{r}
+Empleo = bind_rows(AOF2, ADF2, AIF2)
+
+```
+
+# Fusión Horizontal:
+
+Para fusionar los datos del módulo de CGF2 con los datos que acabamos de crear con el nombre de *Empleo* debemos utilizar un comando más robusto toda vez que estos datos deben ser fusionados de manera horizontal para evitar la duplicidad en los datos.
+
+Para eso utilizamos el comando `full_join` y utilizamos nuestra variable de identidad **LLAVE**. La sintaxis del comando de programación completo es la siguiente:
+
+```{r}
+full_join(ACGF2, Empleo, by="LLAVE",  
+                all = TRUE)
+ECG<- full_join(ACGF2, Empleo, by="LLAVE",  
+                all = TRUE)%>%select(LLAVE, HOGAR.x, REGIS.x, AREA.y, REGIS.y, 
+                fex_c_2011.x, P6020, P6050, P6040)%>%print()
+
+
+```
+
+```{r}
+ECG$fex2 <-round(ECG$fex_c_2011.x/3,4)
+
+
+```
+
+# Etiquetado de variables:
+
+```{r}
+
+ECG$AREAR <-factor(ECG$AREA.y, levels = c("05", "08", "11",
+                                 "13", "17", "23", "50", "52", "54", "66", "68", "73",                                   "76"),
+                                 labels = c("Medellin", "Barranquilla", "Bogota",
+                              "Cartagena", "Manizales", "Monteria", "Villavicencio",
+                              "Pasto", "Cucuta", "Pereira", "Bucaramanga", "Ibague",                                  "Cali"))
+
+str(ECG$AREAR)
+```
+
+```{r}
+ECG$Parentesco <-factor(ECG$P6050, levels = c("1", "2", "3",
+                                          "4", "5", "6", "7", "8", "9"),
+                   labels = c("Jefe hogar", "Pareja", "Hijo",
+                              "Nieto", "Otro pariente", "Empleado servicio",                                          "Pensionado",
+                              "Trabajador", "No pariente"))
+```
+
+
+```{r}
+ECG$SEXO <-factor(ECG$P6020, levels = c("1", "2"), labels = c("Hombre", "Mujer"))
+
+ECG$REGIS <-factor(ECG$REGIS.y, levels = c("60", "70", "80"), 
+                   labels = c("Ocupado", "Desocupado", "Inactivo"))
+
+#ECG<-ECG%>% mutate(REGIS.y=as.factor(REGIS.y))
+#str(ECG$P6020)
+```
+
+# Categorizando por rango de edades:
+
+```{r}
+ECG$EDAD[ECG$P6040>=0 & ECG$P6040<=15]=1
+ECG$EDAD[ECG$P6040>=15 & ECG$P6040<=29]=2
+ECG$EDAD[ECG$P6040>=30 & ECG$P6040<=65]=3
+ECG$EDAD[ECG$P6040>=66 & ECG$P6040<=110]=4
+
+ECG$EDAD<-factor(ECG$EDAD, levels = c("1", "2", "3", "4"), 
+                 labels = c("Niños", "Joven", "Adulto", "Adulto Mayor"))
+class(ECG$EDAD)
+
+```
+# Coeficiente de Expansión:
+
+Para poder utilizar el factor de expansión en el **Rstudio** se necesita crear un **objeto** con la base de datos ponderada que después utilizas para realizar la estadística descriptiva.
+
+El comando para crear el objeto es `svydesign` y la sintaxis para el comando de programación es el siguiente:
+
+```{r}
+PobGen<-svydesign(ids=~1,data=ECG,weights=ECG$fex2, nest = TRUE)
+
+class(PobGen)
+
+```
+Luego de crear el objeto que almacena la base de datos ponderada **PobGen** comenzamos a hacer la estadística descriptiva de los datos.
+
+# Tablas de frecuencia:
+```{r}
+svytable(~fex2, PobGen)
+as.tibble(svytable(~fex2, PobGen))
+Tab<-as.tibble(svytable(~fex2, PobGen))
+print(Tab)
+sum(Tab$n)
+
+svytable(~SEXO, PobGen)
+Tab1<-as.tibble(svytable(~SEXO, exclude=NULL, PobGen))
+print(Tab1)
+sum(Tab1$n)
+
+```
+
+# Participación Porcentual
+```{r}
+round(svytable(~SEXO+AREAR+REGIS.y, PobGen),3)
+Tab2<-as.tibble(round(svytable(~SEXO+AREAR+REGIS.y, PobGen),3))
+print(Tab2)
+sum(Tab2$n)
+
+Tab3<-svytable(~SEXO, PobGen)
+print(Tab3)
+sum(Tab3)
+prop.table(Tab3)
+Tab4<-as.tibble(prop.table(Tab3)*100)
+print(Tab4)
+#prop.table(svytotal(~SEXO, PobGen))
+
+```
+
+
+```{r}
+round(prop.table(svytable(~SEXO, PobGen)),5)*100
+Tab5<-as.data.frame(round(prop.table(svytable(~SEXO, PobGen)),5)*100)
+Tab5
+```
+
+```{r}
+round(prop.table(svytable(~SEXO+AREAR,design=PobGen)),4)*100
+Tab6<-data.frame(round(prop.table(svytable(~SEXO+AREAR,design=PobGen)),4)*100)
+Tab6
+
+```
+
+```{r}
+round(svytable(~SEXO+AREAR+REGIS.y+EDAD,design=PobGen), 3)
+Tab7<-as.tibble(round(svytable(~SEXO+AREAR+REGIS.y+EDAD,design=PobGen), 3))
+print(Tab7)
+
+svytable(~SEXO+EDAD,design=PobGen)
+Tab8<-data.frame(svytable(~SEXO+EDAD,design=PobGen))
+Tab8<-Tab8%>%filter(Tab8$EDAD%in%c("Niños"))
+sum(Tab8$Freq)
+
+```
+# Indicadores del Mercado de TRabajo
+## Ocupados
+
+```{r}
+Ocu<-Tab7%>%filter(Tab7$REGIS.y%in%c("60"))
+O<-sum(Ocu$n)
+O
+```
+
+## Desocupados
+
+```{r}
+Deso<-Tab7%>%filter(Tab7$REGIS.y%in%c("70"))
+D<-sum(Deso$n)
+D
+```
+
+## Inactivos
+
+```{r}
+Ina<-Tab7%>%filter(Tab7$REGIS.y%in%c("80"))
+I<-sum(Ina$n)
+I
+```
+
+## Agregados
+
+```{r}
+PT<-sum(Tab$n)
+PET<-sum(Tab7$n)
+PEA<-sum(Ocu$n+Deso$n)
+PartPET<-round((PET/PT),4)*100
+TGP<-round((PEA/PET),3)*100
+TO<-round((O/PET),3)*100
+TD<-round((D/PEA),3)*100
+Agregados<-(c(PT, PET, PartPET, TGP, TO, TD))
+print(Agregados)
+```
+
+# Tabla de indicadores Agregados
+
+```{r}
+Indicadores<-matrix(c(Agregados), ncol=6, nrow = 1)
+colnames(Indicadores)=c("PT", "PET", "Part_PET", "TGP", 
+        "TO", "TD")
+rownames(Indicadores)=c("Agregados")
+Indicadores<-as.data.frame(Indicadores)
+print(Indicadores)
+```
+
+# Gráficos
+```{r}
+
+Genero<-ggplot(Tab5, aes(x="", y=Freq, fill=SEXO))+ 
+  geom_bar(stat = "identity", 
+           color="black")+
+  geom_text(aes(label=Freq),
+            position=position_stack(vjust=0.5), 
+            color ="black", size=8)+
+  ggtitle("Total Poblacion por Genero ")+
+  theme (plot.title = element_text(family="Comic Sans MS",
+              size=rel(1.5), #Tama?o relativo de la letra del t?tulo
+              vjust=2, #Justificaci?n vertical, para separarlo del gr?fico
+              face="bold", #Letra negrilla. Otras posibilidades "plain", "italic", "bold" y "bold.italic"
+              color="black", #Color del texto
+              lineheight=1.5))+ labs(x="Porcentaje %", 
+              y= "Frecuencias")+
+              coord_polar(theta = "y")+
+  theme_void() # remove background, grid, numeric labels
+
+plot(Genero)
+```
+
